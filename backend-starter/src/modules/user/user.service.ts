@@ -31,7 +31,17 @@ export class UserService {
   async findAll() {
     return await this.userRepository.find({
       relations: ['roles'],
+      order: { createdAt: 'DESC' },
     });
+  }
+
+  async findByRoleName(roleName: string) {
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.roles', 'role')
+      .where('role.name = :roleName', { roleName })
+      .orderBy('user.createdAt', 'DESC')
+      .getMany();
   }
 
   async findOne(id: string) {

@@ -38,7 +38,7 @@ Authenticated routes accept either:
 | Auth | `POST /auth/register`, `/login`, `/logout`, `/forgot-password`, `/reset-password`, `/change-password`, `GET /auth/me`, `/auth/google` |
 | Device | `GET /device`, `POST /device/fcm`, `DELETE /device/:deviceId` |
 | OTP | `POST /otp/send`, `/otp/verify`, `/otp/resend`, `/otp/send/me` |
-| User | `POST /user` (super_admin → role `user`), `POST /user/admin` (super_admin → role `admin`), `POST /user/:id/password` (super_admin), CRUD |
+| User | `GET /user`, `GET /user/users`, `GET /user/admins`, `POST /user`, `POST /user/admin`, `POST /user/:id/password`, CRUD |
 | Role / Permission | CRUD + assign under `/role`, `/permission` |
 | Media | `/media`, `/files` |
 

@@ -128,6 +128,14 @@ export async function listUsers() {
   return apiFetch<ApiSuccess<AuthUser[]>>("/user");
 }
 
+export async function listRegularUsers() {
+  return apiFetch<ApiSuccess<AuthUser[]>>("/user/users");
+}
+
+export async function listAdmins() {
+  return apiFetch<ApiSuccess<AuthUser[]>>("/user/admins");
+}
+
 export async function adminSetPassword(userId: string, newPassword: string) {
   return apiFetch<ApiSuccess<unknown>>(`/user/${userId}/password`, {
     method: "POST",

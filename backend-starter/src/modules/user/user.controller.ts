@@ -164,6 +164,44 @@ export class UserController {
     };
   }
 
+  @Get('users')
+  @UseGuards(AuthGuard, RoleGuard)
+  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'List accounts with role `user`',
+    description: 'Super admin only.',
+  })
+  @ApiOkResponse({ type: ApiSuccessResponseDto })
+  async listRegularUsers() {
+    const data = await this.userService.findByRoleName(BASE_APP_ROLES.USER);
+    return {
+      statusCode: HttpStatus.OK,
+      error: false,
+      message: 'Users retrieved successfully',
+      data,
+    };
+  }
+
+  @Get('admins')
+  @UseGuards(AuthGuard, RoleGuard)
+  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'List accounts with role `admin`',
+    description: 'Super admin only. Does not include super_admin accounts.',
+  })
+  @ApiOkResponse({ type: ApiSuccessResponseDto })
+  async listAdmins() {
+    const data = await this.userService.findByRoleName(BASE_APP_ROLES.ADMIN);
+    return {
+      statusCode: HttpStatus.OK,
+      error: false,
+      message: 'Admins retrieved successfully',
+      data,
+    };
+  }
+
   @Post(':id/password')
   @UseGuards(AuthGuard, RoleGuard)
   @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)

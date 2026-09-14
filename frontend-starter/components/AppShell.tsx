@@ -23,7 +23,7 @@ function NavLink({
   label: string;
   pathname: string;
 }) {
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const active = pathname === href;
   return (
     <Link
       href={href}
@@ -94,6 +94,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <p className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-zinc-400">
                     Administration
                   </p>
+                  <NavLink
+                    href="/admin/users"
+                    label="Users"
+                    pathname={pathname}
+                  />
+                  <NavLink
+                    href="/admin/admins"
+                    label="Admins"
+                    pathname={pathname}
+                  />
                   <NavLink
                     href="/admin/users/create"
                     label="Create user"

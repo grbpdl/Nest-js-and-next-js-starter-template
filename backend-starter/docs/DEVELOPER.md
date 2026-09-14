@@ -6,7 +6,7 @@ This repo is a **REST Auth + Media starter**.
 
 - NestJS + TypeORM + Postgres
 - JWT cookie auth, Google OAuth
-- OTP (SMTP email; Twilio SMS or Discord when `SMS_DEBUG=true`)
+- OTP (SMTP email; Sparrow SMS or Discord when `SMS_DEBUG=true`)
 - RBAC (roles + permissions)
 - Multi-device + FCM (IP, platform; FCM cleared on logout)
 - Media upload (`STORAGE_TYPE=local|cloud`, DigitalOcean Spaces)

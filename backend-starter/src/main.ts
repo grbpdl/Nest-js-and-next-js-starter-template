@@ -67,7 +67,7 @@ async function bootstrap() {
         '',
         '## OTP delivery',
         '- Email OTPs always go through SMTP (`MAILER_*`).',
-        '- Phone OTPs go to Discord when `SMS_DEBUG=true`, otherwise Twilio.',
+        '- Phone OTPs go to Discord when `SMS_DEBUG=true`, otherwise Sparrow SMS.',
         '',
         '## Media',
         '`STORAGE_TYPE=local` serves files from `/uploads`. `STORAGE_TYPE=cloud` uses DigitalOcean Spaces.',

@@ -38,9 +38,8 @@ const EnvironmentConfiguration = {
   SMS_DEBUG: envBool('SMS_DEBUG', true),
   DISCORD_WEBHOOK_URL: env('DISCORD_WEBHOOK_URL'),
 
-  TWILIO_ACCOUNT_SID: env('TWILIO_ACCOUNT_SID'),
-  TWILIO_AUTH_TOKEN: env('TWILIO_AUTH_TOKEN'),
-  TWILIO_FROM_NUMBER: env('TWILIO_FROM_NUMBER'),
+  SPARROW_SMS_TOKEN: env('SPARROW_SMS_TOKEN'),
+  SPARROW_SMS_FROM: env('SPARROW_SMS_FROM'),
 
   STORAGE_TYPE: (env('STORAGE_TYPE', 'local') === 'cloud'
     ? 'cloud'

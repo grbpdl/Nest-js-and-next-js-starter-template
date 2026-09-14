@@ -40,7 +40,7 @@ export class OtpController {
   @ApiOperation({
     summary: 'Send OTP',
     description:
-      'Provide email or phone. Email uses SMTP; phone uses Discord when SMS_DEBUG=true, else Twilio.',
+      'Provide email or phone. Email uses SMTP; phone uses Discord when SMS_DEBUG=true, else Sparrow SMS.',
   })
   @ApiCreatedResponse({ type: ApiSuccessResponseDto })
   @ApiBadRequestResponse({ type: ApiErrorResponseDto })

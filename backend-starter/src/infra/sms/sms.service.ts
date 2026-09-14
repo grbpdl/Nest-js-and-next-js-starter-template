@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import EnvironmentConfiguration from 'src/config/env.config';
 import { DiscordWebhookService } from './discord-webhook.service';
-import { TwilioSmsService } from './twilio-sms.service';
+import { SparrowSmsService } from './sparrow-sms.service';
 
 @Injectable()
 export class SmsService {
   constructor(
     private readonly discordWebhookService: DiscordWebhookService,
-    private readonly twilioSmsService: TwilioSmsService,
+    private readonly sparrowSmsService: SparrowSmsService,
   ) {}
 
   async sendOtp(phone: string, code: string, purpose: string): Promise<void> {
@@ -16,7 +16,7 @@ export class SmsService {
       return;
     }
 
-    await this.twilioSmsService.sendSms(
+    await this.sparrowSmsService.sendSms(
       phone,
       `Your ${EnvironmentConfiguration.APP_NAME} verification code is ${code}`,
     );

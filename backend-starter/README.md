@@ -5,7 +5,7 @@ NestJS REST starter with auth, OTP, Google OAuth, RBAC, and local/cloud media up
 ## Features
 
 - **Auth**: register (+ OTP verify), login (JWT httpOnly cookie), logout, refresh, `/auth/me`
-- **OTP**: email via SMTP; phone via Twilio, or Discord when `SMS_DEBUG=true`
+- **OTP**: email via SMTP; phone via Sparrow SMS, or Discord when `SMS_DEBUG=true`
 - **Google OAuth**: `/auth/google` + callback (redirects to frontend `ORIGIN`)
 - **RBAC**: roles (`super_admin`, `admin`, `user`) + permissions; `super_admin` bypasses guards
 - **Devices**: multi-device login with IP, platform, optional FCM; logout clears FCM so push stops
@@ -16,7 +16,7 @@ NestJS REST starter with auth, OTP, Google OAuth, RBAC, and local/cloud media up
 
 ```bash
 cp .env.example .env
-# fill Postgres, JWT, mail, ORIGIN=http://localhost:3001, optional Discord/Twilio/Google/Spaces
+# fill Postgres, JWT, mail, ORIGIN=http://localhost:3001, optional Discord/Sparrow/Google/Spaces
 npm install
 npm run db:seed
 npm run dev
@@ -68,3 +68,11 @@ The API stores IP (from the request), platform, and FCM per `(userId, deviceId)`
 ## Seed admin
 
 Set `ADMIN_USER_EMAIL`, `ADMIN_USER_PASSWORD`, `ADMIN_USER_PHONE` then `npm run db:seed`.
+
+## OTP delivery
+
+| Channel | Behavior |
+|---------|----------|
+| Email | Always SMTP (`MAILER_*`) |
+| Phone + `SMS_DEBUG=true` | Discord webhook (`DISCORD_WEBHOOK_URL`) |
+| Phone + `SMS_DEBUG=false` | Sparrow SMS (`SPARROW_SMS_TOKEN`, `SPARROW_SMS_FROM`) |

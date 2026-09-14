@@ -21,7 +21,7 @@ import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthGuard } from './guards/auth.guard';
-import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { Request as ExpressRequest, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -355,21 +355,22 @@ export class AuthController {
   }
 
   @Get('google')
-  @UseGuards(PassportAuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   @ApiOperation({
     summary: 'Start Google OAuth',
-    description: 'Browser redirect to Google consent screen.',
+    description:
+      'Browser redirect to Google consent screen. Returns 503 if Google OAuth env vars are not set.',
   })
   async googleAuth() {
     // Initiates the Google OAuth2 flow
   }
 
   @Get('google/callback')
-  @UseGuards(PassportAuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   @ApiOperation({
     summary: 'Google OAuth callback',
     description:
-      'Sets access + refresh cookies and redirects to `${ORIGIN}/auth/callback?access_token=...&refresh_token=...`.',
+      'Sets access + refresh cookies and redirects to `${ORIGIN}/auth/callback?access_token=...&refresh_token=...`. Disabled when Google OAuth is not configured.',
   })
   async googleAuthRedirect(
     @Request() req: { user: any },

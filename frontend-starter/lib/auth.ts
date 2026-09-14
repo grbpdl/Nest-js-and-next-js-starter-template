@@ -139,6 +139,10 @@ export function getGoogleAuthUrl() {
   return getApiUrl("/auth/google");
 }
 
+export function isGoogleAuthEnabled() {
+  return process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+}
+
 export function hasRole(user: AuthUser | null | undefined, role: string) {
   return Boolean(user?.roles?.some((r) => r.name === role));
 }

@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
-import { getGoogleAuthUrl, login } from "@/lib/auth";
+import { getGoogleAuthUrl, isGoogleAuthEnabled, login } from "@/lib/auth";
 import { getWebDevicePayload } from "@/lib/device";
 import { useAuth } from "@/lib/session";
 
@@ -80,12 +80,14 @@ export function LoginForm() {
           Forgot password?
         </Link>
       </p>
-      <a
-        href={getGoogleAuthUrl()}
-        className="mt-3 flex w-full items-center justify-center rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-      >
-        Continue with Google
-      </a>
+      {isGoogleAuthEnabled() ? (
+        <a
+          href={getGoogleAuthUrl()}
+          className="mt-3 flex w-full items-center justify-center rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+        >
+          Continue with Google
+        </a>
+      ) : null}
       <p className="mt-4 text-center text-sm text-zinc-600">
         No account?{" "}
         <Link href="/register" className="font-medium text-zinc-900 underline">

@@ -7,8 +7,9 @@ Minimal Next.js App Router UI for the NestJS REST auth + RBAC starter.
 - Register → email OTP verify → login
 - Google OAuth (redirects via backend `/auth/google`)
 - Profile page for all authenticated users
+- Left sidebar navigation (account + super-admin links)
 - Admins / super admins see assigned roles and permission codes
-- Super admin: Create User, Create Admin
+- Super admin: Create User, Create Admin, Set password
 
 ## Quick start
 

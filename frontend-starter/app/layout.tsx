@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AppNav } from "@/components/AppNav";
+import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/lib/session";
 import "./globals.css";
 
@@ -29,12 +29,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900">
+      <body className="min-h-full bg-zinc-50 text-zinc-900">
         <AuthProvider>
-          <AppNav />
-          <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
-            {children}
-          </main>
+          <AppShell>{children}</AppShell>
         </AuthProvider>
       </body>
     </html>

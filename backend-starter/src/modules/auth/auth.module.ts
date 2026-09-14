@@ -10,6 +10,7 @@ import { RoleModule } from 'src/modules/role/role.module';
 import { OtpModule } from 'src/modules/common/otp/otp.module';
 import { DeviceModule } from 'src/modules/device/device.module';
 import { AuthGuard } from './guards/auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { AuthGuard } from './guards/auth.guard';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, GoogleStrategy, AuthGuard],
+  providers: [AuthService, GoogleStrategy, GoogleAuthGuard, AuthGuard],
   controllers: [AuthController],
   exports: [AuthService, AuthGuard],
 })

@@ -66,7 +66,7 @@ async function bootstrap() {
         'In Swagger UI use **Authorize** → cookie and/or bearer (access token).',
         '',
         '## OTP delivery',
-        '- Email OTPs always go through SMTP (`MAILER_*`).',
+        '- Email OTPs use SMTP (`MAILER_HOST` / `MAILER_EMAIL` / `MAILER_PASSWORD`). Without credentials, the OTP is logged.',
         '- Phone OTPs go to Discord when `SMS_DEBUG=true`, otherwise Sparrow SMS.',
         '',
         '## Media',

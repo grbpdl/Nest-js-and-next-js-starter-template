@@ -4,7 +4,16 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": ["mail/templates/**/*", "assets/geojson/**/*"],
+    "assets": [
+      {
+        "include": "infra/mail/templates/**/*",
+        "watchAssets": true
+      },
+      {
+        "include": "assets/**/*",
+        "watchAssets": true
+      }
+    ],
     "watchAssets": true
   }
 }

@@ -187,6 +187,70 @@ export class UserService {
     });
   }
 
+  /** True when another account already owns this email as verified. */
+  async isEmailTakenByVerifiedUser(email: string, exceptUserId?: string) {
+    const user = await this.findOneByEmail(email);
+    if (!user || !user.isEmailVerified) return false;
+    return exceptUserId ? user.id !== exceptUserId : true;
+  }
+
+  /** True when another account already owns this phone as verified. */
+  async isPhoneTakenByVerifiedUser(phone: string, exceptUserId?: string) {
+    const user = await this.findOneByPhone(phone);
+    if (!user || !user.isPhoneVerified) return false;
+    return exceptUserId ? user.id !== exceptUserId : true;
+  }
+
+  /**
+   * Clears phone from accounts that never verified it so a new signup can claim it.
+   */
+  async releaseUnverifiedPhone(phone: string, exceptUserId?: string) {
+    const holders = await this.userRepository.find({ where: { phone } });
+    for (const holder of holders) {
+      if (exceptUserId && holder.id === exceptUserId) continue;
+      if (holder.isPhoneVerified) continue;
+      holder.phone = null;
+      holder.isPhoneVerified = false;
+      await this.userRepository.save(holder);
+    }
+  }
+
+  /**
+   * Updates an unfinished signup (email not verified yet) with new registration data.
+   */
+  async replacePendingRegistration(
+    userId: string,
+    data: {
+      firstName: string;
+      lastName: string;
+      password: string;
+      phone?: string | null;
+    },
+  ) {
+    const password = await this.encryptPassword(data.password);
+    await this.userRepository.update(userId, {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      password,
+      phone: data.phone ?? null,
+      isEmailVerified: false,
+      isPhoneVerified: false,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
+      phoneVerificationToken: null,
+      phoneVerificationTokenExpiresAt: null,
+    });
+    return await this.findOne(userId);
+  }
+
+  /** Removes an unfinished signup so email can be reused (e.g. admin create). */
+  async removeIfUnverifiedByEmail(email: string) {
+    const user = await this.findOneByEmail(email);
+    if (user && !user.isEmailVerified) {
+      await this.userRepository.delete(user.id);
+    }
+  }
+
   async findOneByEmailOrPhone(email: string, phone: string) {
     return await this.userRepository.findOne({
       where: [{ email }, { phone }],

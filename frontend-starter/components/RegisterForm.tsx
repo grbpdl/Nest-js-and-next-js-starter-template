@@ -46,7 +46,8 @@ export function RegisterForm() {
     <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
       <h1 className="text-xl font-semibold">Register</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Create an account, then verify your email with the OTP we send.
+        Create an account, then verify email (and phone, if provided) with OTP.
+        Unfinished signups can be registered again until verified.
       </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">

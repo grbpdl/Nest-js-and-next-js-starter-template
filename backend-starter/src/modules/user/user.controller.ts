@@ -53,8 +53,7 @@ export class UserController {
   ) {}
 
   private async assertUniqueEmailPhone(email: string, phone?: string) {
-    const existingUserByEmail = await this.userService.findOneByEmail(email);
-    if (existingUserByEmail) {
+    if (await this.userService.isEmailTakenByVerifiedUser(email)) {
       throw new ConflictException({
         statusCode: HttpStatus.CONFLICT,
         error: true,
@@ -62,10 +61,11 @@ export class UserController {
         message: `User already exists with email address ${email}`,
       });
     }
+    // Drop unfinished signups so admin can claim the email
+    await this.userService.removeIfUnverifiedByEmail(email);
 
     if (phone) {
-      const existingUserByPhone = await this.userService.findOneByPhone(phone);
-      if (existingUserByPhone) {
+      if (await this.userService.isPhoneTakenByVerifiedUser(phone)) {
         throw new ConflictException({
           statusCode: HttpStatus.CONFLICT,
           error: true,
@@ -73,6 +73,7 @@ export class UserController {
           message: `User already exists with phone number ${phone}`,
         });
       }
+      await this.userService.releaseUnverifiedPhone(phone);
     }
   }
 
@@ -308,10 +309,12 @@ export class UserController {
       });
     }
     if (updateUserDto.email) {
-      const findUserByEmail = await this.userService.findOneByEmail(
-        updateUserDto.email,
-      );
-      if (findUserByEmail && findUserByEmail.id !== existingUser.id) {
+      if (
+        await this.userService.isEmailTakenByVerifiedUser(
+          updateUserDto.email,
+          existingUser.id,
+        )
+      ) {
         throw new ConflictException({
           statusCode: HttpStatus.CONFLICT,
           error: true,
@@ -319,13 +322,19 @@ export class UserController {
           message: `User already exists with email ${updateUserDto.email}`,
         });
       }
+      const other = await this.userService.findOneByEmail(updateUserDto.email);
+      if (other && other.id !== existingUser.id && !other.isEmailVerified) {
+        await this.userService.remove(other.id);
+      }
     }
 
     if (updateUserDto.phone) {
-      const findUserByPhone = await this.userService.findOneByPhone(
-        updateUserDto.phone,
-      );
-      if (findUserByPhone && findUserByPhone.id !== existingUser.id) {
+      if (
+        await this.userService.isPhoneTakenByVerifiedUser(
+          updateUserDto.phone,
+          existingUser.id,
+        )
+      ) {
         throw new ConflictException({
           statusCode: HttpStatus.CONFLICT,
           error: true,
@@ -333,6 +342,10 @@ export class UserController {
           message: `User already exists with phone ${updateUserDto.phone}`,
         });
       }
+      await this.userService.releaseUnverifiedPhone(
+        updateUserDto.phone,
+        existingUser.id,
+      );
     }
     const data = await this.userService.update(id, updateUserDto);
     return {

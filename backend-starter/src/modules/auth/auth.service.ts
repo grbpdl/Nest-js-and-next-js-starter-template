@@ -103,8 +103,13 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    const existing = await this.userService.findOneByEmail(dto.email);
-    if (existing) {
+    const email = dto.email.toLowerCase().trim();
+    const phone = dto.phone?.trim() || undefined;
+
+    const existingByEmail = await this.userService.findOneByEmail(email);
+
+    // Only a *verified* email blocks signup. Unverified pending accounts can be reclaimed.
+    if (existingByEmail?.isEmailVerified) {
       throw new ConflictException({
         statusCode: HttpStatus.CONFLICT,
         error: true,
@@ -112,22 +117,46 @@ export class AuthService {
       });
     }
 
-    if (dto.phone) {
-      const byPhone = await this.userService.findOneByPhone(dto.phone);
-      if (byPhone) {
+    if (phone) {
+      const phoneTaken = await this.userService.isPhoneTakenByVerifiedUser(
+        phone,
+        existingByEmail?.id,
+      );
+      if (phoneTaken) {
         throw new ConflictException({
           statusCode: HttpStatus.CONFLICT,
           error: true,
           message: 'Phone already registered',
         });
       }
+      await this.userService.releaseUnverifiedPhone(phone, existingByEmail?.id);
     }
 
     const userRole = await this.roleService.findByNameOrCreate('user');
-    const user = await this.userService.create({
-      ...dto,
-      roles: [userRole],
-    });
+
+    let user: User;
+    if (existingByEmail && !existingByEmail.isEmailVerified) {
+      user = await this.userService.replacePendingRegistration(
+        existingByEmail.id,
+        {
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          password: dto.password,
+          phone: phone ?? null,
+        },
+      );
+      if (!user.roles?.length) {
+        await this.userService.updateRoles(user.id, [userRole]);
+        user = await this.userService.findOne(user.id);
+      }
+    } else {
+      user = await this.userService.create({
+        ...dto,
+        email,
+        phone,
+        roles: [userRole],
+      });
+    }
 
     await this.otpService.send(
       { email: user.email, purpose: OtpPurpose.VERIFY_EMAIL },

@@ -107,7 +107,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register a new user',
     description:
-      'Creates an unverified user and sends email (and phone) OTP for verification.',
+      'Creates an unverified user and sends email (and phone) OTPs. Email and phone are verified separately. Unverified email/phone can be reclaimed by registering again; only verified channels block signup.',
   })
   @ApiCreatedResponse({ type: ApiSuccessResponseDto })
   @ApiConflictResponse({ type: ApiErrorResponseDto })

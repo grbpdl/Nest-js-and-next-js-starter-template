@@ -28,9 +28,9 @@ Backend must be running on port 3000 with `ORIGIN=http://localhost:3001` so cook
 | Route | Who |
 |-------|-----|
 | `/login`, `/register`, `/verify` | Public |
-| `/profile` | Any authenticated user |
-| `/admin/users/create` | `super_admin` |
-| `/admin/admins/create` | `super_admin` |
+| `/forgot-password`, `/reset-password` | Public (OTP via email or phone) |
+| `/profile`, `/change-password` | Any authenticated user |
+| `/admin/users/create`, `/admin/admins/create`, `/admin/users/set-password` | `super_admin` |
 | `/auth/callback` | Google OAuth return |
 
 ## Auth notes

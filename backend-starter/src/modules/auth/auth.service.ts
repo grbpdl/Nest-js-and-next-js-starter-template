@@ -17,10 +17,20 @@ import { OtpService } from 'src/modules/common/otp/otp.service';
 import { OtpPurpose } from 'src/modules/common/otp/enums';
 import { RegisterDto } from './dto/register.dto';
 import EnvironmentConfiguration from 'src/config/env.config';
+import { DeviceService } from 'src/modules/device/device.service';
+import { DeviceInfoDto } from 'src/modules/device/entities/user-device.entity';
 
 export type AuthTokenPair = {
   access_token: string;
   refresh_token: string;
+};
+
+export type DeviceLoginContext = {
+  deviceId?: string;
+  fcmToken?: string;
+  deviceInfo?: DeviceInfoDto;
+  ipAddress?: string;
+  userAgent?: string;
 };
 
 type UserWithoutPassword = Omit<User, 'password' | 'generateId'>;
@@ -38,6 +48,8 @@ export class AuthService {
     private readonly roleService: RoleService,
     @Inject(forwardRef(() => OtpService))
     private readonly otpService: OtpService,
+    @Inject(forwardRef(() => DeviceService))
+    private readonly deviceService: DeviceService,
   ) {}
 
   private get accessSecret() {
@@ -147,6 +159,7 @@ export class AuthService {
   async login(
     emailOrPhone: string,
     password: string,
+    deviceContext?: DeviceLoginContext,
   ): Promise<
     (AuthTokenPair & { user: UserWithoutPassword }) | null
   > {
@@ -161,6 +174,8 @@ export class AuthService {
       });
     }
 
+    await this.syncDevice(user.id, deviceContext);
+
     const tokens = await this.issueTokenPair(user);
     const { password: _pwd, ...userWithoutPassword } = user;
     return {
@@ -169,7 +184,10 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(refreshToken: string): Promise<AuthTokenPair> {
+  async refreshTokens(
+    refreshToken: string,
+    deviceContext?: DeviceLoginContext,
+  ): Promise<AuthTokenPair> {
     let payload: any;
     try {
       payload = await this.jwtService.verifyAsync(refreshToken, {
@@ -209,6 +227,8 @@ export class AuthService {
       });
     }
 
+    await this.syncDevice(user.id, deviceContext);
+
     return this.issueTokenPair(user);
   }
 
@@ -218,6 +238,34 @@ export class AuthService {
     if (!user) return;
     user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await this.userService.saveUser(user);
+  }
+
+  /**
+   * Logout: revoke JWTs and clear FCM so the device stops receiving pushes.
+   * With `deviceId`, clears that device only; otherwise clears FCM on all devices.
+   */
+  async logout(userId: string, deviceId?: string): Promise<void> {
+    await this.revokeAllTokens(userId);
+    if (deviceId) {
+      await this.deviceService.clearFcmForDevice(userId, deviceId);
+    } else {
+      await this.deviceService.clearAllFcmForUser(userId);
+    }
+  }
+
+  private async syncDevice(
+    userId: string,
+    deviceContext?: DeviceLoginContext,
+  ): Promise<void> {
+    if (!deviceContext?.deviceId) return;
+    await this.deviceService.upsertDevice({
+      userId,
+      deviceId: deviceContext.deviceId,
+      fcmToken: deviceContext.fcmToken,
+      deviceInfo: deviceContext.deviceInfo,
+      ipAddress: deviceContext.ipAddress,
+      userAgent: deviceContext.userAgent,
+    });
   }
 
   async isTokenValid(token: string): Promise<any> {
@@ -285,6 +333,60 @@ export class AuthService {
     user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await this.userService.saveUser(user);
     return true;
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.userService.findOneForTokens(userId);
+    if (!user) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: true,
+        message: 'User not found',
+      });
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.password);
+    if (!matches) {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        error: true,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: true,
+        message: 'New password must be different from the current password',
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await this.userService.saveUser(user);
+    await this.deviceService.clearAllFcmForUser(userId);
+  }
+
+  /** Super admin sets another user's password (no current password required). */
+  async setPasswordForUser(userId: string, newPassword: string): Promise<void> {
+    const user = await this.userService.findOneForTokens(userId);
+    if (!user) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: true,
+        message: 'User not found',
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await this.userService.saveUser(user);
+    await this.deviceService.clearAllFcmForUser(userId);
   }
 
   async validateToken(token: string): Promise<Partial<User>> {

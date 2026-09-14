@@ -16,6 +16,7 @@ import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { OtpModule } from './modules/common/otp/otp.module';
 import { MediaModule } from './modules/common/media/media.module';
+import { DeviceModule } from './modules/device/device.module';
 import EnvironmentConfiguration from './config/env.config';
 
 @Module({
@@ -35,6 +36,7 @@ import EnvironmentConfiguration from './config/env.config';
     AuthModule,
     OtpModule,
     MediaModule,
+    DeviceModule,
     SeedModule,
     MulterModule.register({
       dest: EnvironmentConfiguration.UPLOAD_DIR_LOCAL,

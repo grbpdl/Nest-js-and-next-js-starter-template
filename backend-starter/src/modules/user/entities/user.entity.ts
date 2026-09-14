@@ -1,6 +1,7 @@
 import { Exclude } from 'class-transformer';
 import { IsBoolean, IsString } from 'class-validator';
 import { Role } from 'src/modules/role/entities/role.entity';
+import { UserDevice } from 'src/modules/device/entities/user-device.entity';
 
 import { BaseEntity } from 'src/shared/utils/Helper';
 import { Column, Entity, Index, JoinTable, ManyToMany, OneToMany } from 'typeorm';
@@ -97,6 +98,9 @@ export class User extends BaseEntity {
     inverseJoinColumn: { name: 'roleId', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  @OneToMany(() => UserDevice, (device) => device.user)
+  devices?: UserDevice[];
 
   constructor(partial: Partial<User>) {
     super();

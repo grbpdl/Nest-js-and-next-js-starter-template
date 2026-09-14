@@ -41,6 +41,8 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
+      transform: true,
+      whitelist: true,
       exceptionFactory(errors) {
         return handleValidationErrorMessage(errors);
       },
@@ -94,6 +96,7 @@ async function bootstrap() {
     .addTag('User', 'User CRUD (RBAC + owner checks)')
     .addTag('Role', 'Roles and role-permission assignment')
     .addTag('Permission', 'Permission CRUD')
+    .addTag('Device', 'Multi-device sessions, IP/platform, FCM tokens')
     .addTag('Media', 'Upload and manage files (local or Spaces)')
     .addTag('Files', 'Resolve media access URLs')
     .build();

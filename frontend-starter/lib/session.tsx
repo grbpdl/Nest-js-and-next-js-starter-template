@@ -12,6 +12,7 @@ import {
 import { getMe, logout as apiLogout } from "./auth";
 import type { AuthUser } from "./types";
 import { ApiRequestError } from "./api";
+import { getOrCreateDeviceId } from "./device";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiLogout();
+      await apiLogout(getOrCreateDeviceId());
     } finally {
       setUser(null);
     }

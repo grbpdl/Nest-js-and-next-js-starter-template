@@ -19,6 +19,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
 import { Request as ExpressRequest, Response } from 'express';
@@ -39,6 +40,8 @@ import {
 } from 'src/shared/swagger/api-response.dto';
 import { extractRefreshToken } from './utils/extract-access-token';
 import { parseDurationToMs } from './utils/parse-duration';
+import { LogoutDto } from 'src/modules/device/dto/device-context.dto';
+import { getClientIp, getUserAgent } from 'src/modules/device/utils/request-meta';
 import EnvironmentConfiguration from 'src/config/env.config';
 
 @ApiTags('Auth')
@@ -124,7 +127,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request password-reset OTP',
     description:
-      'Always returns success if the request is valid. OTP is sent when the account exists.',
+      'Send `emailOrPhone`. OTP is emailed for email addresses, or sent by SMS/Discord for phone numbers. Always returns success when the request is valid.',
   })
   @ApiCreatedResponse({ type: ApiSuccessResponseDto })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
@@ -168,12 +171,42 @@ export class AuthController {
     });
   }
 
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard)
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Change own password',
+    description:
+      'Requires current password. Revokes all sessions and clears FCM tokens.',
+  })
+  @ApiOkResponse({ type: ApiSuccessResponseDto })
+  @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
+  @ApiBadRequestResponse({ type: ApiErrorResponseDto })
+  async changePassword(
+    @Request() req: { user: { id: string } },
+    @Body() body: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.changePassword(
+      req.user.id,
+      body.currentPassword,
+      body.newPassword,
+    );
+    this.clearAuthCookies(res);
+    return {
+      statusCode: HttpStatus.OK,
+      error: false,
+      message: 'Password changed successfully. Please log in again.',
+    };
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Login with email/phone and password',
     description:
-      'Sets httpOnly `access_token` + `refresh_token` cookies (browser) and returns both tokens in the body (mobile). Use access token as `Authorization: Bearer <access_token>`.',
+      'Sets httpOnly cookies and returns tokens. Optional `deviceId` / `fcmToken` / `deviceInfo` register the device (IP + platform) for multi-device and push.',
   })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   @ApiConflictResponse({
@@ -182,11 +215,19 @@ export class AuthController {
   })
   async login(
     @Body() loginDto: LoginDto,
+    @Request() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
     const loginResult = await this.authService.login(
       loginDto.emailOrPhone,
       loginDto.password,
+      {
+        deviceId: loginDto.deviceId,
+        fcmToken: loginDto.fcmToken,
+        deviceInfo: loginDto.deviceInfo,
+        ipAddress: getClientIp(req),
+        userAgent: getUserAgent(req),
+      },
     );
 
     if (!loginResult) {
@@ -215,7 +256,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Refresh access (and refresh) tokens',
     description:
-      'Browser: send `refresh_token` cookie. Mobile: send `refresh_token` in JSON body or `X-Refresh-Token` header. Returns a new token pair and rotates cookies.',
+      'Browser: send `refresh_token` cookie. Mobile: send `refresh_token` in JSON body or `X-Refresh-Token` header. Optional device fields update last IP / FCM.',
   })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   @ApiUnauthorizedResponse({ type: ApiErrorResponseDto })
@@ -233,7 +274,13 @@ export class AuthController {
       });
     }
 
-    const tokens = await this.authService.refreshTokens(refreshToken);
+    const tokens = await this.authService.refreshTokens(refreshToken, {
+      deviceId: body.deviceId,
+      fcmToken: body.fcmToken,
+      deviceInfo: body.deviceInfo,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
     this.setAuthCookies(res, tokens);
 
     return {
@@ -251,15 +298,16 @@ export class AuthController {
   @ApiOperation({
     summary: 'Logout',
     description:
-      'Clears auth cookies and revokes all tokens for the user (tokenVersion bump). Mobile clients should also discard stored tokens.',
+      'Clears cookies, revokes JWT sessions (`tokenVersion`), and clears FCM token(s) so push stops after logout. Pass `deviceId` to clear only that device; omit to clear all devices.',
   })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   async logout(
     @Request() req: { user: { id: string } },
+    @Body() body: LogoutDto = {},
     @Res({ passthrough: true }) res: Response,
   ) {
     if (req.user?.id) {
-      await this.authService.revokeAllTokens(req.user.id);
+      await this.authService.logout(req.user.id, body?.deviceId);
     }
     this.clearAuthCookies(res);
 

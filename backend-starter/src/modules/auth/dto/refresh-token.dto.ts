@@ -1,5 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { DeviceInfoDto } from 'src/modules/device/entities/user-device.entity';
 
 export class RefreshTokenDto {
   @ApiPropertyOptional({
@@ -11,4 +18,20 @@ export class RefreshTokenDto {
   @IsString()
   @IsNotEmpty()
   refresh_token?: string;
+
+  @ApiPropertyOptional({ example: 'device-abc-123' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+
+  @ApiPropertyOptional({ example: 'fcm-token-from-firebase' })
+  @IsOptional()
+  @IsString()
+  fcmToken?: string;
+
+  @ApiPropertyOptional({ type: DeviceInfoDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DeviceInfoDto)
+  deviceInfo?: DeviceInfoDto;
 }

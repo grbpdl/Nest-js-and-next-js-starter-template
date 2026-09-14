@@ -8,6 +8,7 @@ This repo is a **REST Auth + Media starter**.
 - JWT cookie auth, Google OAuth
 - OTP (SMTP email; Twilio SMS or Discord when `SMS_DEBUG=true`)
 - RBAC (roles + permissions)
+- Multi-device + FCM (IP, platform; FCM cleared on logout)
 - Media upload (`STORAGE_TYPE=local|cloud`, DigitalOcean Spaces)
 
 ## Layout
@@ -15,7 +16,7 @@ This repo is a **REST Auth + Media starter**.
 ```
 src/
   config/env.config.ts
-  modules/auth|user|role|permission
+  modules/auth|user|role|permission|device
   modules/common/otp|media
   infra/database|mail|sms|redis
 ```

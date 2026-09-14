@@ -8,12 +8,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from './google.strategy';
 import { RoleModule } from 'src/modules/role/role.module';
 import { OtpModule } from 'src/modules/common/otp/otp.module';
+import { DeviceModule } from 'src/modules/device/device.module';
+import { AuthGuard } from './guards/auth.guard';
 
 @Module({
   imports: [
     forwardRef(() => UserModule),
     forwardRef(() => RoleModule),
     forwardRef(() => OtpModule),
+    forwardRef(() => DeviceModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,8 +32,8 @@ import { OtpModule } from 'src/modules/common/otp/otp.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, GoogleStrategy],
+  providers: [AuthService, GoogleStrategy, AuthGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, AuthGuard],
 })
 export class AuthModule {}

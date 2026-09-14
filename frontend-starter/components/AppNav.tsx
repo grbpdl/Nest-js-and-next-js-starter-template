@@ -44,6 +44,9 @@ export function AppNav() {
               <Link href="/profile" className={linkClass("/profile")}>
                 Profile
               </Link>
+              <Link href="/change-password" className={linkClass("/change-password")}>
+                Change password
+              </Link>
               {isSuperAdmin(user) && (
                 <>
                   <Link
@@ -57,6 +60,12 @@ export function AppNav() {
                     className={linkClass("/admin/admins/create")}
                   >
                     Create Admin
+                  </Link>
+                  <Link
+                    href="/admin/users/set-password"
+                    className={linkClass("/admin/users/set-password")}
+                  >
+                    Set password
                   </Link>
                 </>
               )}

@@ -24,11 +24,13 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AdminSetPasswordDto } from './dto/admin-set-password.dto';
 
 import { User } from './entities/user.entity';
 import { CheckOwnerOrPermissionsGuard } from 'src/modules/auth/guards/check-owner-or-permissions.guard';
 import { CheckOwnerOrPermissions } from 'src/modules/auth/decorators/check-owner-or-permissions.decorator';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guard';
+import { AuthService } from 'src/modules/auth/auth.service';
 import { RoleService } from '../role/role.service';
 import { RoleGuard } from '../role/guards/role.guard';
 import { RequiredRoles, AllowedRoles } from '../role/decorators/role.decorator';
@@ -45,6 +47,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly roleService: RoleService,
+    private readonly authService: AuthService,
   ) {}
 
   private async assertUniqueEmailPhone(email: string, phone?: string) {
@@ -158,6 +161,39 @@ export class UserController {
       error: false,
       message: 'All user data',
       data,
+    };
+  }
+
+  @Post(':id/password')
+  @UseGuards(AuthGuard, RoleGuard)
+  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Set password for another user (super_admin)',
+    description:
+      'Sets a new password for any user/admin. Revokes their sessions and clears FCM tokens.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ type: ApiSuccessResponseDto })
+  @ApiNotFoundResponse({ type: ApiErrorResponseDto })
+  async setPassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AdminSetPasswordDto,
+  ) {
+    const existing = await this.userService.findOne(id);
+    if (!existing) {
+      throw new NotFoundException({
+        statusCode: HttpStatus.NOT_FOUND,
+        error: true,
+        type: 'Not Found',
+        message: `User not found with provided id ${id}`,
+      });
+    }
+    await this.authService.setPasswordForUser(id, body.newPassword);
+    return {
+      statusCode: HttpStatus.OK,
+      error: false,
+      message: 'Password updated successfully',
     };
   }
 

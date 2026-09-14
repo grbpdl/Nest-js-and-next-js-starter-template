@@ -4,6 +4,15 @@ import type { ApiSuccess, AuthUser } from "./types";
 export type LoginInput = {
   emailOrPhone: string;
   password: string;
+  deviceId?: string;
+  fcmToken?: string;
+  deviceInfo?: {
+    platform?: string;
+    model?: string;
+    manufacturer?: string;
+    osVersion?: string;
+    appVersion?: string;
+  };
 };
 
 export type RegisterInput = {
@@ -39,9 +48,10 @@ export async function register(input: RegisterInput) {
   });
 }
 
-export async function logout() {
+export async function logout(deviceId?: string) {
   return apiFetch<ApiSuccess<unknown>>("/auth/logout", {
     method: "POST",
+    body: JSON.stringify(deviceId ? { deviceId } : {}),
   });
 }
 
@@ -83,6 +93,45 @@ export async function createAdmin(input: CreateUserInput) {
   return apiFetch<ApiSuccess<AuthUser>>("/user/admin", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function forgotPassword(emailOrPhone: string) {
+  return apiFetch<ApiSuccess<unknown>>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ emailOrPhone }),
+  });
+}
+
+export async function resetPassword(input: {
+  emailOrPhone: string;
+  token: string;
+  password: string;
+}) {
+  return apiFetch<ApiSuccess<unknown>>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  return apiFetch<ApiSuccess<unknown>>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listUsers() {
+  return apiFetch<ApiSuccess<AuthUser[]>>("/user");
+}
+
+export async function adminSetPassword(userId: string, newPassword: string) {
+  return apiFetch<ApiSuccess<unknown>>(`/user/${userId}/password`, {
+    method: "POST",
+    body: JSON.stringify({ newPassword }),
   });
 }
 

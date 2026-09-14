@@ -31,8 +31,10 @@ Backend must be running on port 3000 with `ORIGIN=http://localhost:3001` so cook
 | `/login`, `/register`, `/verify` | Public |
 | `/forgot-password`, `/reset-password` | Public (OTP via email or phone) |
 | `/profile`, `/change-password` | Any authenticated user |
-| `/admin/users`, `/admin/admins` | `super_admin` — list users / admins |
-| `/admin/users/create`, `/admin/admins/create`, `/admin/users/set-password` | `super_admin` |
+| `/admin/roles`, `/admin/roles/create`, `/admin/roles/[id]`, `/admin/roles/assign` | Role CRUD / assign — gated by `*:role` permissions |
+| `/admin/users`, `/admin/admins` | List — gated by `read:user` |
+| `/admin/users/create` | Gated by `create:user` |
+| `/admin/admins/create`, `/admin/users/set-password` | `super_admin` |
 | `/auth/callback` | Google OAuth return |
 
 ## Auth notes

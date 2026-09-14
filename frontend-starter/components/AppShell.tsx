@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { isSuperAdmin } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { useAuth } from "@/lib/session";
 
 const PUBLIC_AUTH_PATHS = new Set([
@@ -57,6 +58,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const canReadUsers = hasPermission(user, "read:user");
+  const canCreateUsers = hasPermission(user, "create:user");
+  const canReadRoles = hasPermission(user, "read:role");
+  const canCreateRoles = hasPermission(user, "create:role");
+  const canUpdateRoles = hasPermission(user, "update:role");
+  const showAdminSection =
+    isSuperAdmin(user) ||
+    canReadUsers ||
+    canCreateUsers ||
+    canReadRoles ||
+    canCreateRoles ||
+    canUpdateRoles;
+
   return (
     <div className="flex min-h-full flex-1">
       <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white">
@@ -74,7 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ) : null}
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 p-3">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
           {loading ? (
             <p className="px-3 py-2 text-sm text-zinc-400">Loading…</p>
           ) : user ? (
@@ -89,36 +103,67 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 pathname={pathname}
               />
 
-              {isSuperAdmin(user) ? (
+              {showAdminSection ? (
                 <>
                   <p className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-zinc-400">
                     Administration
                   </p>
-                  <NavLink
-                    href="/admin/users"
-                    label="Users"
-                    pathname={pathname}
-                  />
-                  <NavLink
-                    href="/admin/admins"
-                    label="Admins"
-                    pathname={pathname}
-                  />
-                  <NavLink
-                    href="/admin/users/create"
-                    label="Create user"
-                    pathname={pathname}
-                  />
-                  <NavLink
-                    href="/admin/admins/create"
-                    label="Create admin"
-                    pathname={pathname}
-                  />
-                  <NavLink
-                    href="/admin/users/set-password"
-                    label="Set password"
-                    pathname={pathname}
-                  />
+                  {canReadUsers ? (
+                    <>
+                      <NavLink
+                        href="/admin/users"
+                        label="Users"
+                        pathname={pathname}
+                      />
+                      <NavLink
+                        href="/admin/admins"
+                        label="Admins"
+                        pathname={pathname}
+                      />
+                    </>
+                  ) : null}
+                  {canCreateUsers ? (
+                    <NavLink
+                      href="/admin/users/create"
+                      label="Create user"
+                      pathname={pathname}
+                    />
+                  ) : null}
+                  {isSuperAdmin(user) ? (
+                    <NavLink
+                      href="/admin/admins/create"
+                      label="Create admin"
+                      pathname={pathname}
+                    />
+                  ) : null}
+                  {isSuperAdmin(user) ? (
+                    <NavLink
+                      href="/admin/users/set-password"
+                      label="Set password"
+                      pathname={pathname}
+                    />
+                  ) : null}
+                  {canReadRoles ? (
+                    <NavLink
+                      href="/admin/roles"
+                      label="Roles"
+                      pathname={pathname}
+                    />
+                  ) : null}
+                  {canCreateRoles ? (
+                    <NavLink
+                      href="/admin/roles/create"
+                      label="Create role"
+                      pathname={pathname}
+                    />
+                  ) : null}
+                  {canUpdateRoles ? (
+                    <NavLink
+                      href="/admin/roles/assign"
+                      label="Assign roles"
+                      pathname={pathname}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </>

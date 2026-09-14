@@ -5,7 +5,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 
 export default function CreateUserPage() {
   return (
-    <RequireAuth requireSuperAdmin>
+    <RequireAuth requirePermission="create:user">
       <CreateAccountForm mode="user" />
     </RequireAuth>
   );

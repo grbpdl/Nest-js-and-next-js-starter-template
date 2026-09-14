@@ -324,7 +324,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Current authenticated user',
     description:
-      'Includes roles and a flat `permissions` array (`entity:action`) derived from role permissions.',
+      'Includes roles and a flat `permissions` array (`action:entity`, e.g. `read:user`) derived from role permissions.',
   })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   async me(@Request() request: any) {
@@ -333,7 +333,7 @@ export class AuthController {
       const permissionSet = new Set<string>();
       for (const role of roles) {
         for (const permission of role.permissions ?? []) {
-          permissionSet.add(`${permission.entity}:${permission.action}`);
+          permissionSet.add(`${permission.action}:${permission.entity}`);
         }
       }
       return {

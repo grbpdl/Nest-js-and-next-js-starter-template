@@ -29,6 +29,8 @@ export type CreateUserInput = {
   email: string;
   phone?: string;
   password: string;
+  /** Extra role IDs when creating an admin (admin role is always included). */
+  roleIds?: string[];
 };
 
 export async function login(input: LoginInput) {
@@ -134,6 +136,66 @@ export async function listRegularUsers() {
 
 export async function listAdmins() {
   return apiFetch<ApiSuccess<AuthUser[]>>("/user/admins");
+}
+
+export type AppPermission = {
+  id: string;
+  action: string;
+  entity: string;
+};
+
+export type AppRole = {
+  id: string;
+  name: string;
+  permissions?: AppPermission[];
+};
+
+export async function listRoles() {
+  return apiFetch<ApiSuccess<AppRole[]>>("/role");
+}
+
+export async function getRoleWithPermissions(roleId: string) {
+  return apiFetch<ApiSuccess<AppRole>>(`/role/permissions/${roleId}`);
+}
+
+export async function createRole(input: {
+  name: string;
+  permissions?: { id: string }[];
+}) {
+  return apiFetch<ApiSuccess<AppRole>>("/role", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function setRolePermissions(
+  roleId: string,
+  permissionIds: string[],
+) {
+  return apiFetch<ApiSuccess<AppRole>>(`/role/${roleId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      permissions: permissionIds.map((id) => ({ id })),
+    }),
+  });
+}
+
+export async function listPermissions() {
+  return apiFetch<ApiSuccess<AppPermission[]>>("/permission");
+}
+
+export async function assignRolesToUser(userId: string, roleIds: string[]) {
+  return apiFetch<ApiSuccess<AuthUser>>("/role/assign", {
+    method: "POST",
+    body: JSON.stringify({ userId, roleIds }),
+  });
+}
+
+export async function revokeRolesFromUser(userId: string, roleIds: string[]) {
+  return apiFetch<ApiSuccess<AuthUser>>("/role/revoke", {
+    method: "POST",
+    body: JSON.stringify({ userId, roleIds }),
+  });
 }
 
 export async function adminSetPassword(userId: string, newPassword: string) {

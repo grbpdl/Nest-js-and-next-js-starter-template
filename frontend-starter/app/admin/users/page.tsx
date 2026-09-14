@@ -5,7 +5,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 
 export default function UsersListPage() {
   return (
-    <RequireAuth requireSuperAdmin>
+    <RequireAuth requirePermission="read:user">
       <AccountList kind="users" />
     </RequireAuth>
   );

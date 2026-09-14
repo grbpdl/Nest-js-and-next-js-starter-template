@@ -40,7 +40,10 @@ export class RoleService {
   }
 
   async findAll() {
-    return await this.roleRepository.find();
+    return await this.roleRepository.find({
+      relations: ['permissions'],
+      order: { name: 'ASC' },
+    });
   }
 
   async findOneWithPermissions(id: string) {
@@ -103,7 +106,15 @@ export class RoleService {
       throw new NotFoundException('No valid roles found');
     }
 
-    return await this.userService.updateRoles(user.id, validRoles);
+    const existing = user.roles ?? [];
+    const merged = [...existing];
+    for (const role of validRoles) {
+      if (!merged.some((r) => r.id === role.id)) {
+        merged.push(role);
+      }
+    }
+
+    return await this.userService.updateRoles(user.id, merged);
   }
 
   async revokeRolesFromUser(userId: string, roleIds: string[]) {
@@ -119,7 +130,7 @@ export class RoleService {
   }
 
   async addPermissionsToRole(roleId: string, permissionIds: string[]) {
-    const role = await this.findOne(roleId);
+    const role = await this.findOneWithPermissions(roleId);
     if (!role) {
       throw new NotFoundException('Role not found');
     }
@@ -129,17 +140,21 @@ export class RoleService {
       throw new NotFoundException('No valid permissions found');
     }
 
-    role.permissions = [...role.permissions, ...permissions];
+    const existingIds = new Set((role.permissions ?? []).map((p) => p.id));
+    role.permissions = [
+      ...(role.permissions ?? []),
+      ...permissions.filter((p) => !existingIds.has(p.id)),
+    ];
     return await this.roleRepository.save(role);
   }
 
   async removePermissionsFromRole(roleId: string, permissionIds: string[]) {
-    const role = await this.findOne(roleId);
+    const role = await this.findOneWithPermissions(roleId);
     if (!role) {
       throw new NotFoundException('Role not found');
     }
 
-    role.permissions = role.permissions.filter(
+    role.permissions = (role.permissions ?? []).filter(
       (permission) => !permissionIds.includes(permission.id),
     );
     return await this.roleRepository.save(role);

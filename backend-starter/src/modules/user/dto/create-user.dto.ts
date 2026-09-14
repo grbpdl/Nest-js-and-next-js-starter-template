@@ -4,6 +4,7 @@ import {
   IsArray,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from 'src/modules/role/entities/role.entity';
@@ -48,6 +49,18 @@ export class CreateUserDto {
   @IsArray()
   @IsOptional()
   roles?: Role[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    format: 'uuid',
+    description:
+      'Extra role IDs to assign when creating an admin (admin role is always included)',
+    example: ['018f...'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  roleIds?: string[];
 
   @ApiPropertyOptional({ example: 'Kathmandu, Nepal' })
   @IsString()

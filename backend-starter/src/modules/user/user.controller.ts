@@ -34,6 +34,8 @@ import { AuthService } from 'src/modules/auth/auth.service';
 import { RoleService } from '../role/role.service';
 import { RoleGuard } from '../role/guards/role.guard';
 import { RequiredRoles, AllowedRoles } from '../role/decorators/role.decorator';
+import { PermissionGuard } from '../permission/guards/permission.guard';
+import { RequiredPermissions } from '../permission/decorators/permission.decorator';
 import { BASE_APP_ROLES } from '../role/entities/role.entity';
 import { ApiAuth } from 'src/shared/swagger/api-auth.decorator';
 import {
@@ -75,13 +77,13 @@ export class UserController {
   }
 
   @Post()
-  @UseGuards(AuthGuard, RoleGuard)
-  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @UseGuards(AuthGuard, PermissionGuard)
+  @RequiredPermissions('create:user')
   @ApiAuth()
   @ApiOperation({
-    summary: 'Create user (super_admin)',
+    summary: 'Create user',
     description:
-      'Creates a verified user with the `user` role. Self-signup must use `POST /auth/register` + OTP.',
+      'Creates a verified user with the `user` role. Requires `create:user` (super_admin bypasses). Self-signup must use `POST /auth/register` + OTP.',
   })
   @ApiCreatedResponse({ type: ApiSuccessResponseDto })
   @ApiConflictResponse({ type: ApiErrorResponseDto })
@@ -116,7 +118,8 @@ export class UserController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Create admin (super_admin)',
-    description: 'Creates a verified user with the `admin` role.',
+    description:
+      'Creates a verified user with the `admin` role, plus any extra `roleIds` (except `super_admin`).',
   })
   @ApiCreatedResponse({ type: ApiSuccessResponseDto })
   @ApiConflictResponse({ type: ApiErrorResponseDto })
@@ -126,9 +129,23 @@ export class UserController {
     const adminRole = await this.roleService.findByNameOrCreate(
       BASE_APP_ROLES.ADMIN,
     );
+
+    const roles = [adminRole];
+    if (createUserDto.roleIds?.length) {
+      for (const roleId of createUserDto.roleIds) {
+        const role = await this.roleService.findOne(roleId);
+        if (!role) continue;
+        if (role.name === BASE_APP_ROLES.SUPER_ADMIN) continue;
+        if (!roles.some((r) => r.id === role.id)) {
+          roles.push(role);
+        }
+      }
+    }
+
+    const { roleIds: _roleIds, roles: _roles, ...rest } = createUserDto;
     const newUser = await this.userService.create({
-      ...createUserDto,
-      roles: [adminRole],
+      ...rest,
+      roles,
     });
     await this.userService.markEmailVerified(newUser.id);
     if (newUser.phone) {
@@ -165,12 +182,12 @@ export class UserController {
   }
 
   @Get('users')
-  @UseGuards(AuthGuard, RoleGuard)
-  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @UseGuards(AuthGuard, PermissionGuard)
+  @RequiredPermissions('read:user')
   @ApiAuth()
   @ApiOperation({
     summary: 'List accounts with role `user`',
-    description: 'Super admin only.',
+    description: 'Requires `read:user` (super_admin bypasses).',
   })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   async listRegularUsers() {
@@ -184,12 +201,13 @@ export class UserController {
   }
 
   @Get('admins')
-  @UseGuards(AuthGuard, RoleGuard)
-  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @UseGuards(AuthGuard, PermissionGuard)
+  @RequiredPermissions('read:user')
   @ApiAuth()
   @ApiOperation({
     summary: 'List accounts with role `admin`',
-    description: 'Super admin only. Does not include super_admin accounts.',
+    description:
+      'Requires `read:user` (super_admin bypasses). Does not include super_admin accounts.',
   })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   async listAdmins() {

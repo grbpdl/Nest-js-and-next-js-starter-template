@@ -153,6 +153,14 @@ export class AuthService {
     const user = await this.validateUser(emailOrPhone, password);
     if (!user) return null;
 
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        error: true,
+        message: 'Please verify your email OTP before logging in',
+      });
+    }
+
     const tokens = await this.issueTokenPair(user);
     const { password: _pwd, ...userWithoutPassword } = user;
     return {

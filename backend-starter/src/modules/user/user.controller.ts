@@ -31,7 +31,7 @@ import { CheckOwnerOrPermissions } from 'src/modules/auth/decorators/check-owner
 import { AuthGuard } from 'src/modules/auth/guards/auth.guard';
 import { RoleService } from '../role/role.service';
 import { RoleGuard } from '../role/guards/role.guard';
-import { AllowedRoles } from '../role/decorators/role.decorator';
+import { RequiredRoles, AllowedRoles } from '../role/decorators/role.decorator';
 import { BASE_APP_ROLES } from '../role/entities/role.entity';
 import { ApiAuth } from 'src/shared/swagger/api-auth.decorator';
 import {
@@ -47,51 +47,98 @@ export class UserController {
     private readonly roleService: RoleService,
   ) {}
 
-  @Post()
-  @ApiOperation({
-    summary: 'Create user (public signup-style)',
-    description: 'Assigns the default `user` role.',
-  })
-  @ApiCreatedResponse({ type: ApiSuccessResponseDto })
-  @ApiConflictResponse({ type: ApiErrorResponseDto })
-  async create(@Body() createUserDto: CreateUserDto) {
-    const existingUserByEmail = await this.userService.findOneByEmail(
-      createUserDto.email,
-    );
+  private async assertUniqueEmailPhone(email: string, phone?: string) {
+    const existingUserByEmail = await this.userService.findOneByEmail(email);
     if (existingUserByEmail) {
       throw new ConflictException({
         statusCode: HttpStatus.CONFLICT,
         error: true,
         type: 'Conflict',
-        message: `User already exists with email address ${createUserDto.email}`,
+        message: `User already exists with email address ${email}`,
       });
     }
 
-    if (createUserDto.phone) {
-      const existingUserByPhone = await this.userService.findOneByPhone(
-        createUserDto.phone,
-      );
+    if (phone) {
+      const existingUserByPhone = await this.userService.findOneByPhone(phone);
       if (existingUserByPhone) {
         throw new ConflictException({
           statusCode: HttpStatus.CONFLICT,
           error: true,
           type: 'Conflict',
-          message: `User already exists with phone number ${createUserDto.phone}`,
+          message: `User already exists with phone number ${phone}`,
         });
       }
     }
+  }
 
-    const UserRole = await this.roleService.findByNameOrCreate('user');
+  @Post()
+  @UseGuards(AuthGuard, RoleGuard)
+  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Create user (super_admin)',
+    description:
+      'Creates a verified user with the `user` role. Self-signup must use `POST /auth/register` + OTP.',
+  })
+  @ApiCreatedResponse({ type: ApiSuccessResponseDto })
+  @ApiConflictResponse({ type: ApiErrorResponseDto })
+  async create(@Body() createUserDto: CreateUserDto) {
+    await this.assertUniqueEmailPhone(createUserDto.email, createUserDto.phone);
+
+    const userRole = await this.roleService.findByNameOrCreate(
+      BASE_APP_ROLES.USER,
+    );
     const newUser = await this.userService.create({
       ...createUserDto,
-      roles: [UserRole],
+      roles: [userRole],
     });
-    const { password, ...data } = newUser;
+    await this.userService.markEmailVerified(newUser.id);
+    if (newUser.phone) {
+      await this.userService.markPhoneVerified(newUser.id);
+    }
+
+    const data = await this.userService.findOne(newUser.id);
+    const { password: _pwd, ...safe } = data as User & { password?: string };
     return {
-      statusCode: 201,
+      statusCode: HttpStatus.CREATED,
       error: false,
       message: 'User created successfully',
-      data,
+      data: safe,
+    };
+  }
+
+  @Post('admin')
+  @UseGuards(AuthGuard, RoleGuard)
+  @RequiredRoles(BASE_APP_ROLES.SUPER_ADMIN)
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Create admin (super_admin)',
+    description: 'Creates a verified user with the `admin` role.',
+  })
+  @ApiCreatedResponse({ type: ApiSuccessResponseDto })
+  @ApiConflictResponse({ type: ApiErrorResponseDto })
+  async createAdmin(@Body() createUserDto: CreateUserDto) {
+    await this.assertUniqueEmailPhone(createUserDto.email, createUserDto.phone);
+
+    const adminRole = await this.roleService.findByNameOrCreate(
+      BASE_APP_ROLES.ADMIN,
+    );
+    const newUser = await this.userService.create({
+      ...createUserDto,
+      roles: [adminRole],
+    });
+    await this.userService.markEmailVerified(newUser.id);
+    if (newUser.phone) {
+      await this.userService.markPhoneVerified(newUser.id);
+    }
+
+    const data = await this.userService.findOne(newUser.id);
+    const { password: _pwd, ...safe } = data as User & { password?: string };
+    return {
+      statusCode: HttpStatus.CREATED,
+      error: false,
+      message: 'Admin created successfully',
+      data: safe,
     };
   }
 

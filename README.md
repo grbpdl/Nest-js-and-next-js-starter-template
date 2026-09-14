@@ -1,70 +1,35 @@
-# Starter API
+# Customer Engagement Starter
 
-NestJS REST starter with auth, OTP, Google OAuth, RBAC, and local/cloud media upload.
+Monorepo with a ready-to-use NestJS REST API and Next.js frontend focused on auth and RBAC.
 
-## Features
+## Packages
 
-- **Auth**: register, login (JWT httpOnly cookie), logout, `/auth/me`
-- **OTP**: email via SMTP; phone via Twilio, or Discord when `SMS_DEBUG=true`
-- **Google OAuth**: `/auth/google` + callback
-- **RBAC**: roles (`super_admin`, `admin`, `user`) + permissions
-- **Media**: `STORAGE_TYPE=local` writes under `UPLOAD_DIR_LOCAL` and serves `/uploads`; `STORAGE_TYPE=cloud` uses DigitalOcean Spaces
+| Folder | Stack | Port |
+|--------|-------|------|
+| [`backend-starter`](backend-starter) | NestJS + TypeORM + Postgres | 3000 |
+| [`frontend-starter`](frontend-starter) | Next.js App Router | 3001 |
+| [`refrence-project`](refrence-project) | Full GraphQL reference (not required to run the starter) |
 
-## Quick start
+## Run locally
 
 ```bash
+# backend
+cd backend-starter
 cp .env.example .env
-# fill Postgres, JWT, mail, and optional Discord/Twilio/Spaces
-npm install
-npm run db:seed
-npm run dev
+npm install && npm run db:seed && npm run dev
+
+# frontend (another terminal)
+cd frontend-starter
+cp .env.example .env.local
+npm install && npm run dev
 ```
 
-Swagger: `http://localhost:3000/api`
+Seeded super admin uses `ADMIN_USER_*` from the backend `.env`.
 
-Authenticated routes accept either:
-- **Browser**: httpOnly `access_token` cookie (use `credentials: 'include'`)
-- **Mobile**: `Authorization: Bearer <access_token>` from login `data.access_token`
+## Role → UI
 
-Token pair:
-- `access_token` — short-lived (`JWT_ACCESS_EXPIRATION`, default `15m`)
-- `refresh_token` — longer-lived (`JWT_REFRESH_EXPIRATION`, default `7d`)
-
-Refresh with `POST /auth/refresh` (cookie, JSON body, or `X-Refresh-Token` header). Logout revokes all sessions.
-
-In Swagger UI open **Authorize** and set cookie and/or bearer (access token).
-
-## OTP delivery
-
-| Channel | Behavior |
-|---------|----------|
-| Email | Always SMTP (`MAILER_*`) |
-| Phone + `SMS_DEBUG=true` | Discord webhook (`DISCORD_WEBHOOK_URL`) |
-| Phone + `SMS_DEBUG=false` | Twilio (`TWILIO_*`) |
-
-## Media
-
-```env
-STORAGE_TYPE=local   # or cloud
-UPLOAD_DIR_LOCAL=./uploads
-UPLOAD_DIR_CLOUD=uploads
-# DO_SPACES_* when STORAGE_TYPE=cloud
-```
-
-- `POST /media/upload` (multipart `file`, auth required)
-- `GET /media/:id`, `DELETE /media/:id`
-- `GET /files/:id`, `GET /files/:id/url`
-
-## Main REST routes
-
-| Area | Routes |
-|------|--------|
-| Auth | `POST /auth/register`, `/login`, `/logout`, `/forgot-password`, `/reset-password`, `GET /auth/me`, `/auth/google` |
-| OTP | `POST /otp/send`, `/otp/verify`, `/otp/resend`, `/otp/send/me` |
-| User / Role / Permission | CRUD under `/user`, `/role`, `/permission` |
-| Media | `/media`, `/files` |
-
-## Seed admin
-
-Set `ADMIN_USER_EMAIL`, `ADMIN_USER_PASSWORD`, `ADMIN_USER_PHONE` then `npm run db:seed`.
-# Nest-js-rest-api-starter-template
+| Role | After login |
+|------|-------------|
+| `user` | Profile |
+| `admin` | Profile + roles/permissions list |
+| `super_admin` | Profile + Create User + Create Admin |

@@ -273,14 +273,28 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard)
   @ApiAuth()
-  @ApiOperation({ summary: 'Current authenticated user' })
+  @ApiOperation({
+    summary: 'Current authenticated user',
+    description:
+      'Includes roles and a flat `permissions` array (`entity:action`) derived from role permissions.',
+  })
   @ApiOkResponse({ type: ApiSuccessResponseDto })
   async me(@Request() request: any) {
     if (request.user) {
+      const roles = request.user.roles ?? [];
+      const permissionSet = new Set<string>();
+      for (const role of roles) {
+        for (const permission of role.permissions ?? []) {
+          permissionSet.add(`${permission.entity}:${permission.action}`);
+        }
+      }
       return {
         statusCode: HttpStatus.OK,
         error: false,
-        data: request.user,
+        data: {
+          ...request.user,
+          permissions: Array.from(permissionSet).sort(),
+        },
         message: 'User details',
       };
     }

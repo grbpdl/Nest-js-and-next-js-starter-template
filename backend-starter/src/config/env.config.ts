@@ -17,7 +17,7 @@ function envBool(key: string, fallback = false): boolean {
 const EnvironmentConfiguration = {
   NODE_ENV: env('NODE_ENV', 'development'),
   PORT: Number(env('PORT', '3000')),
-  ORIGIN: env('ORIGIN', 'http://localhost:3000'),
+  ORIGIN: env('ORIGIN', 'http://localhost:3001'),
   BASE_URL: env('BASE_URL', 'http://localhost:3000'),
   APP_NAME: env('APP_NAME', 'starter-api'),
 
